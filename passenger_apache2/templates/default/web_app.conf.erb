@@ -3,109 +3,110 @@
 -%>
 <VirtualHost *:80>
   ServerName <%= @params[:server_name] %>
-  <% if @params[:server_aliases] && !@params[:server_aliases].empty? -%>
-  ServerAlias <% @params[:server_aliases].each do |a| %><%= "#{a}" %> <% end %>
-  <% end -%>
-
-  <% if @params[:mounted_at] -%>
-  DocumentRoot /var/www
-  <%= passenger_handler -%>BaseURI <%= @params[:mounted_at] %>
-  <% else -%>
-  DocumentRoot <%= @params[:docroot] %>
-  <%= passenger_handler -%>BaseURI /
-  <% end -%>
-  <%= passenger_handler -%>Env <%= @params[:rails_env] %>
-
-  <Directory <%= @params[:docroot] %>>
-    Options FollowSymLinks
-    AllowOverride None
-    Order allow,deny
-    Allow from all
-  </Directory>
-
-  <Directory ~ "\.svn">
-    Order allow,deny
-    Deny from all
-  </Directory>
-
-  <Directory ~ "\.git">
-    Order allow,deny
-    Deny from all
-  </Directory>
-
-  <LocationMatch "^/assets/.*$">
-    Header unset ETag
-    FileETag None
-    # RFC says only cache for 1 year
-    ExpiresActive On
-    ExpiresDefault "access plus 1 year"
-  </LocationMatch>
-
-  LogLevel <%= node[:apache][:log_level] %>
-  ErrorLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-error.log
-  CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-access.log combined
-  CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-ganglia.log ganglia
-
-  FileETag none
-
-  <% node[:deploy][@application_name][:environment_variables].each do |key, value| %>
-  SetEnv "<%= key %>" "<%= value.gsub("\"","\\\"") unless value.nil? %>"
-  <% end %>
-
-  RewriteEngine On
-  <% if node[:apache][:version] == '2.2' -%>
-    <% if @params[:rewrite_config] && @params[:rewrite_config] != '' -%>
-  Include <%= @params[:rewrite_config] %>*
-    <% end -%>
-  RewriteLog <%= node[:apache][:log_dir] %>/<%= @application_name %>-rewrite.log
-  RewriteLogLevel 0
-  <% else -%>
-    <% if @params[:rewrite_config] && @params[:rewrite_config] != '' -%>
-  IncludeOptional <%= @params[:rewrite_config] %>*
-    <% end -%>
-  <% end -%>
-
-  # Canonical host
-  RewriteCond %{HTTP_HOST}   !^<%= @params[:server_name] %> [NC]
-  RewriteCond %{HTTP_HOST}   !^$
+  
   <% if node[:deploy][@application_name][:ssl_support] -%>
-    RewriteRule ^/(.*)$        https://<%= @params[:server_name] %>/$1 [L,R=301]
+    Redirect / https://<%= @params[:server_name] %>/
   <% else -%>
-    RewriteRule ^/(.*)$        http://<%= @params[:server_name] %>/$1 [L,R=301]
-  <% end -%>
-
-  RewriteCond %{REQUEST_URI} !\.(css|gif|jpg|jpeg|png)$
-  RewriteCond %{DOCUMENT_ROOT}/system/maintenance.html -f
-  RewriteCond %{SCRIPT_FILENAME} !maintenance.html
-  RewriteRule ^.*$ /system/maintenance.html [L]
-
-  <% if @params[:local_config] && @params[:local_config] != '' -%>
-    <% if node[:apache][:version] == '2.2' -%>
-  Include <%= @params[:local_config] %>*
-    <% else -%>
-  IncludeOptional <%= @params[:local_config] %>*
+    <% if @params[:server_aliases] && !@params[:server_aliases].empty? -%>
+    ServerAlias <% @params[:server_aliases].each do |a| %><%= "#{a}" %> <% end %>
     <% end -%>
+  
+    <% if @params[:mounted_at] -%>
+    DocumentRoot /var/www
+    <%= passenger_handler -%>BaseURI <%= @params[:mounted_at] %>
+    <% else -%>
+    DocumentRoot <%= @params[:docroot] %>
+    <%= passenger_handler -%>BaseURI /
+    <% end -%>
+    <%= passenger_handler -%>Env <%= @params[:rails_env] %>
+  
+    <Directory <%= @params[:docroot] %>>
+      Options FollowSymLinks
+      AllowOverride None
+      Order allow,deny
+      Allow from all
+    </Directory>
+  
+    <Directory ~ "\.svn">
+      Order allow,deny
+      Deny from all
+    </Directory>
+  
+    <Directory ~ "\.git">
+      Order allow,deny
+      Deny from all
+    </Directory>
+  
+    <LocationMatch "^/assets/.*$">
+      Header unset ETag
+      FileETag None
+      # RFC says only cache for 1 year
+      ExpiresActive On
+      ExpiresDefault "access plus 1 year"
+    </LocationMatch>
+  
+    LogLevel <%= node[:apache][:log_level] %>
+    ErrorLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-error.log
+    CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-access.log combined
+    CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-ganglia.log ganglia
+  
+    FileETag none
+  
+    <% node[:deploy][@application_name][:environment_variables].each do |key, value| %>
+    SetEnv "<%= key %>" "<%= value.gsub("\"","\\\"") unless value.nil? %>"
+    <% end %>
+  
+    RewriteEngine On
+    <% if node[:apache][:version] == '2.2' -%>
+      <% if @params[:rewrite_config] && @params[:rewrite_config] != '' -%>
+    Include <%= @params[:rewrite_config] %>*
+      <% end -%>
+    RewriteLog <%= node[:apache][:log_dir] %>/<%= @application_name %>-rewrite.log
+    RewriteLogLevel 0
+    <% else -%>
+      <% if @params[:rewrite_config] && @params[:rewrite_config] != '' -%>
+    IncludeOptional <%= @params[:rewrite_config] %>*
+      <% end -%>
+    <% end -%>
+  
+    # Canonical host
+      RewriteCond %{HTTP_HOST}   !^<%= @params[:server_name] %> [NC]
+      RewriteCond %{HTTP_HOST}   !^$
+      RewriteRule ^/(.*)$        http://<%= @params[:server_name] %>/$1 [L,R=301]
+  
+    RewriteCond %{REQUEST_URI} !\.(css|gif|jpg|jpeg|png)$
+    RewriteCond %{DOCUMENT_ROOT}/system/maintenance.html -f
+    RewriteCond %{SCRIPT_FILENAME} !maintenance.html
+    RewriteRule ^.*$ /system/maintenance.html [L]
+  
+    <% if @params[:local_config] && @params[:local_config] != '' -%>
+      <% if node[:apache][:version] == '2.2' -%>
+    Include <%= @params[:local_config] %>*
+      <% else -%>
+    IncludeOptional <%= @params[:local_config] %>*
+      <% end -%>
+    <% end -%>
+    
+    #
+    # KeepAlive: Whether or not to allow persistent connections (more than
+    # one request per connection). Set to "Off" to deactivate.
+    #
+    KeepAlive On
+    
+    #
+    # MaxKeepAliveRequests: The maximum number of requests to allow
+    # during a persistent connection. Set to 0 to allow an unlimited amount.
+    # We recommend you leave this number high, for maximum performance.
+    #
+    # MaxKeepAliveRequests 100
+  
+    #
+    # KeepAliveTimeout: Number of seconds to wait for the next request from the
+    # same client on the same connection.
+    #
+    # KeepAliveTimeout 100
+    
   <% end -%>
-  
-  #
-  # KeepAlive: Whether or not to allow persistent connections (more than
-  # one request per connection). Set to "Off" to deactivate.
-  #
-  KeepAlive On
-  
-  #
-  # MaxKeepAliveRequests: The maximum number of requests to allow
-  # during a persistent connection. Set to 0 to allow an unlimited amount.
-  # We recommend you leave this number high, for maximum performance.
-  #
-  # MaxKeepAliveRequests 100
-
-  #
-  # KeepAliveTimeout: Number of seconds to wait for the next request from the
-  # same client on the same connection.
-  #
-  # KeepAliveTimeout 100
-  
 </VirtualHost>
 
 <% if node[:deploy][@application_name][:ssl_support] -%>
