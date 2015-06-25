@@ -184,8 +184,8 @@
   <% end -%>
 
   # Canonical host
-  RewriteCond %{HTTP_HOST}   !^<%= @params[:server_name] %> [NC]
-  RewriteCond %{HTTP_HOST}   !^$
+  RewriteCond %{HTTPS}       !^<%= @params[:server_name] %> [NC]
+  RewriteCond %{HTTPS}       !^$
   RewriteRule ^/(.*)$        https://<%= @params[:server_name] %>/$1 [L,R=301]
 
   RewriteCond %{REQUEST_URI} !\.(css|gif|jpg|jpeg|png)$
