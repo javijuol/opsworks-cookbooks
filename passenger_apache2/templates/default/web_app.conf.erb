@@ -5,7 +5,7 @@
   ServerName <%= @params[:server_name] %>
   
   <% if node[:deploy][@application_name][:ssl_support] -%>
-    Redirect / https://<%= @params[:server_name] %>/
+    Redirect 301 / https://<%= @params[:server_name] %>/
   <% else -%>
     <% if @params[:server_aliases] && !@params[:server_aliases].empty? -%>
     ServerAlias <% @params[:server_aliases].each do |a| %><%= "#{a}" %> <% end %>
